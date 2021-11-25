@@ -46,6 +46,10 @@ func main() {
 		os.Exit(1)
 	}
 	signingKey, err := jwt.ParseRSAPrivateKeyFromPEM(keyBytes)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, *claims)
 	signedToken, err := token.SignedString(signingKey)
