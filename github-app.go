@@ -11,11 +11,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const (
-	ReadPermission  = "read"
-	WritePermission = "write"
-)
-
 func createClaims(appId string) *jwt.StandardClaims {
 	return &jwt.StandardClaims{
 		// Issued at time, 60 seconds in the past to allow for clock drift
@@ -72,8 +67,7 @@ func (app *GitHubApp) CreateInstallationToken() (*github.InstallationToken, erro
 	}
 
 	installation := installations[0]
-	permission := WritePermission
-	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, *installation.ID, &github.InstallationTokenOptions{Permissions: &github.InstallationPermissions{SecurityEvents: &permission}})
+	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, *installation.ID, &github.InstallationTokenOptions{Permissions: installation.Permissions})
 	if err != nil {
 		return nil, err
 	}
