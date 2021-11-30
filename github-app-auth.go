@@ -9,7 +9,7 @@ func main() {
 	argsWithoutProg := os.Args[1:]
 
 	if len(argsWithoutProg) != 2 {
-		fmt.Fprintf(os.Stderr, "Usage %s appId privateKey", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage %s appId privateKey\n", os.Args[0])
 		os.Exit(1)
 	}
 
