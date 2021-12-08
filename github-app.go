@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"io/ioutil"
 	"time"
 
@@ -25,6 +24,8 @@ func createClaims(appId string) *jwt.StandardClaims {
 type GitHubApp struct {
 	appId      string
 	privateKey []byte
+	client     *github.Client
+	ctx        context.Context
 }
 
 func NewGitHubApp(appId string, privateKeyFilePath string) (*GitHubApp, error) {
@@ -35,10 +36,6 @@ func NewGitHubApp(appId string, privateKeyFilePath string) (*GitHubApp, error) {
 	}
 	app.privateKey = key
 
-	return app, nil
-}
-
-func (app *GitHubApp) CreateInstallationToken() (*github.InstallationToken, error) {
 	claims := createClaims(app.appId)
 
 	signingKey, err := jwt.ParseRSAPrivateKeyFromPEM(app.privateKey)
@@ -52,22 +49,27 @@ func (app *GitHubApp) CreateInstallationToken() (*github.InstallationToken, erro
 		return nil, err
 	}
 
-	ctx := context.Background()
+	app.ctx = context.Background()
 	staticTokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: signedToken})
-	tokenClient := oauth2.NewClient(ctx, staticTokenSource)
-	client := github.NewClient(tokenClient)
+	tokenClient := oauth2.NewClient(app.ctx, staticTokenSource)
+	app.client = github.NewClient(tokenClient)
 
-	installations, _, err := client.Apps.ListInstallations(ctx, nil)
+	return app, nil
+}
+
+func (app *GitHubApp) ListInstallations() ([]*github.Installation, error) {
+	installations, _, err := app.client.Apps.ListInstallations(app.ctx, nil)
+
 	if err != nil {
 		return nil, err
 	}
 
-	if len(installations) != 1 {
-		return nil, errors.New("The GitHub App has multiple installations when only one is expected!")
-	}
+	return installations, nil
+}
 
-	installation := installations[0]
-	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, *installation.ID, &github.InstallationTokenOptions{Permissions: installation.Permissions})
+func (app *GitHubApp) CreateInstallationToken(installation *github.Installation) (*github.InstallationToken, error) {
+
+	installationToken, _, err := app.client.Apps.CreateInstallationToken(app.ctx, *installation.ID, &github.InstallationTokenOptions{Permissions: installation.Permissions})
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +77,9 @@ func (app *GitHubApp) CreateInstallationToken() (*github.InstallationToken, erro
 	return installationToken, nil
 }
 
-func (app *GitHubApp) CreateGitHubClient(ctx context.Context) (*github.Client, error) {
+func (app *GitHubApp) CreateGitHubClient(ctx context.Context, installation *github.Installation) (*github.Client, error) {
 
-	installationToken, err := app.CreateInstallationToken()
+	installationToken, err := app.CreateInstallationToken(installation)
 	if err != nil {
 		return nil, err
 	}
