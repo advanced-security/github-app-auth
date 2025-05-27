@@ -3,7 +3,7 @@ module github.com/advanced-security/github-app-auth
 go 1.23.0
 
 require (
-	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang-jwt/jwt v5.2.2
 	github.com/google/go-github/v40 v40.0.0
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 )
